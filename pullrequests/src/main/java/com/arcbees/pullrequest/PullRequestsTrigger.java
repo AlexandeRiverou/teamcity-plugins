@@ -19,6 +19,7 @@ package com.arcbees.pullrequest;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -125,18 +126,20 @@ public class PullRequestsTrigger extends PolledBuildTrigger {
     private boolean addBuildTask(PolledTriggerContext context, List<TriggerTask> triggerTasks, PullRequest pullRequest,
             String lastTriggeredCommitHash) {
         PullRequestTarget source = pullRequest.getSource();
+		PullRequestTarget destination = pullRequest.getDestination();
+		
         Commit lastCommit = source.getCommit();
 
         boolean added = false;
         if (!lastCommit.getHash().equals(lastTriggeredCommitHash)) {
-            addBuildTask(context, triggerTasks, source);
+            addBuildTask(context, triggerTasks, source, destination);
             added = true;
         }
 
         return added;
     }
 
-    private void addBuildTask(PolledTriggerContext context, List<TriggerTask> triggerTasks, PullRequestTarget source) {
+    private void addBuildTask(PolledTriggerContext context, List<TriggerTask> triggerTasks, PullRequestTarget source, PullRequestTarget destination) {
         BuildTypeEx buildType = (BuildTypeEx) context.getBuildType();
         BuildCustomizer buildCustomizer = buildCustomizerFactory.createBuildCustomizer(buildType, null);
         buildCustomizer.setCleanSources(true);
@@ -146,11 +149,16 @@ public class PullRequestsTrigger extends PolledBuildTrigger {
                 branch.getDummyBuild().getChanges(SelectPrevBuildPolicy.SINCE_NULL_BUILD, true));
 
         buildCustomizer.setDesiredBranchName(branch.getName());
-
+        
         if (lastModification != null) {
             buildCustomizer.setChangesUpTo(lastModification);
         }
-
+		
+		Map parameters = new HashMap<String,String>();
+		parameters.put("PullRequestTriger.BranchSource", source.getBranch().getName());
+		parameters.put("PullRequestTriger.BranchDestination", destination.getBranch().getName());
+		buildCustomizer.setParameters(parameters);
+		
         TriggerTask task = batchTrigger.newTriggerTask(buildCustomizer.createPromotion());
         triggerTasks.add(task);
     }
