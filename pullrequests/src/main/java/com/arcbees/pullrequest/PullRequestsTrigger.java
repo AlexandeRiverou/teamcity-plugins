@@ -157,6 +157,9 @@ public class PullRequestsTrigger extends PolledBuildTrigger {
 		Map parameters = new HashMap<String,String>();
 		parameters.put("PullRequestTriger.BranchSource", source.getBranch().getName());
 		parameters.put("PullRequestTriger.BranchDestination", destination.getBranch().getName());
+		parameters.put("reverse.dep.*.PullRequestTriger.BranchSource", source.getBranch().getName());
+		parameters.put("reverse.dep.*.PullRequestTriger.BranchDestination", destination.getBranch().getName());
+		
 		buildCustomizer.setParameters(parameters);
 		
         TriggerTask task = batchTrigger.newTriggerTask(buildCustomizer.createPromotion());
